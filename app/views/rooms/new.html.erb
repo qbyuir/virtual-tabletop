@@ -1,0 +1,6 @@
+
+<%= form_with model: @rooms do |form| %>
+    <%= form.label :name, "Nome da Sala:" %>
+    <%= form.text_field :name %>
+    <%= form.submit %>
+<% end %>
