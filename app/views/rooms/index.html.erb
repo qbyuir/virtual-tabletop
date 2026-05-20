@@ -1,6 +1,13 @@
-<h1>Rooms#index</h1>
-<p>Find me in app/views/rooms/index.html.erb</p>
+<h1>Suas Salas</h1>
 
+<%# Mostra todas as salas criadas pelo usuário %>
 <% @rooms.each do |room| %>
-  <p><%= room.name %></p>
+    <%# Mostra o nome da sala e um botão para entrar na respectiva sala %>
+  <p> <%= room.name %> <%= link_to "Entrar na Sala", room_path(room)%> </p>
 <% end %>
+
+<%# Botão que leva à página de criação de sala %>
+<%= link_to "Criar Sala", new_room_path %>
+
+<h1>Extensões</h1>
+<%# implementar extensões e botão para adicionar extensões %>

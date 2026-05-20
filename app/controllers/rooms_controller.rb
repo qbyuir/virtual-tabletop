@@ -5,6 +5,8 @@ class RoomsController < ApplicationController
   end
 
   def show
+    # find_by(code:) é melhor por segurança
+    # código gerado automaticamente é difícil de adivinhar 
     @rooms = current_user.rooms.find_by(code: params[:code])
   end
 

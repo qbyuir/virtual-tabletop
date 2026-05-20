@@ -5,6 +5,8 @@ class Room < ApplicationRecord
   has_secure_token :code, length: 24
 
   validates :name, presence: true
+
+  # usa código URL ao invés de ID numérico.
   def to_param
     code
   end
