@@ -13,7 +13,6 @@ export default class CanvasEngine {
       ui: new Konva.Layer(),
     };
 
-    this.stage.add(this.layers.grid);
     this.stage.add(this.layers.tokens);
     this.stage.add(this.layers.ui);
   }

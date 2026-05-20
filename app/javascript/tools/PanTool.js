@@ -24,8 +24,12 @@ export default class PanTool {
   }
 
   enable() {
+    window.addEventListener("keydown", this._onKeyDown);
+    window.addEventListener("keyup", this._onKeyUp);
+  }
+
+  disable() {
     window.removeEventListener("keydown", this._onKeyDown);
     window.removeEventListener("keyup", this._onKeyUp);
-    this.stage.draggable(false);
   }
 }

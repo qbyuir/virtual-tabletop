@@ -2,7 +2,7 @@ export default class MoveTokenAction {
   constructor(token, from, to) {
     this.token = token;
     this.from = from;
-    this.to = newPos;
+    this.to = to;
   }
 
   execute() {

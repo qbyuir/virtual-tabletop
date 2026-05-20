@@ -26,12 +26,22 @@ export default class PasteManager {
             url,
             pos.x,
             pos.y,
-            this.history,
+            this.historyManager,
           );
-
-          this.historyManager.execute(
-            new PasteTokenAction(this.tokenLayer, token.group),
-          );
+          token.onReady = () => {
+            console.log(
+              "imagem pronta, layer do grupo:",
+              token.group.getLayer(),
+            );
+            this.historyManager.execute(
+              new PasteTokenAction(this.tokenLayer, token.group),
+            );
+            this.tokenLayer.draw();
+            console.log(
+              "após execute, layer do grupo:",
+              token.group.getLayer(),
+            );
+          };
         }
       }
     });

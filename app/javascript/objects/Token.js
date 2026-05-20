@@ -14,10 +14,12 @@ export default class Token {
     Konva.Image.fromURL(url, (image) => {
       image.width(500);
       image.height(800);
+      image.listening(true);
+      this.group.listening(true);
       this.group.add(image);
-      layer.batchDraw();
 
       this.group.on("dragstart", () => {
+        console.log("dragstart disparado");
         this.startPos = { ...this.group.position() };
       });
 
@@ -31,6 +33,8 @@ export default class Token {
           new MoveTokenAction(this.group, this.startPos, endPos),
         );
       });
+
+      if (this.onReady) this.onReady();
     });
   }
 }

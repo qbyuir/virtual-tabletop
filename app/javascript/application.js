@@ -17,7 +17,7 @@ document.addEventListener("turbo:load", () => {
 
   const engine = new CanvasEngine(stageContainer);
   const camera = new Camera(engine.stage);
-  const grid = new Grid(engine.stage, engine.layers.grid);
+  const grid = new Grid(engine.stage);
 
   const historyManager = new HistoryManager();
   const tokenManager = new TokenManager(engine.stage, engine.layers.tokens);
@@ -49,10 +49,6 @@ document.addEventListener("turbo:load", () => {
       historyManager.undo();
       engine.stage.stopDrag();
     }
-  });
-
-  window.addEventListener("mouseup", () => {
-    engine.stage.find(".token").forEach((node) => node.stopDrag());
   });
 
   window.addEventListener("resize", () => {

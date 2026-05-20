@@ -12,6 +12,10 @@ export default class SelectTool {
 
   enable() {
     this.stage.on("mousedown.select", (e) => {
+      console.log("target:", e.target);
+      console.log("hasName token:", e.target.hasName("token"));
+      console.log("ancestor:", e.target.findAncestor(".token"));
+
       if (this.stage.isDragging()) return;
 
       if (e.target.hasName("token") || e.target.findAncestor(".token")) return;

@@ -8619,7 +8619,6 @@
         tokens: new Konva.Layer(),
         ui: new Konva.Layer()
       };
-      this.stage.add(this.layers.grid);
       this.stage.add(this.layers.tokens);
       this.stage.add(this.layers.ui);
     }
@@ -8647,11 +8646,11 @@
         let newScale = direction > 0 ? oldScale * this.scaleBy : oldScale / this.scaleBy;
         newScale = Math.max(this.minScale, Math.min(this.maxScale, newScale));
         this.stage.scale({ x: newScale, y: newScale });
-        const newPos2 = {
+        const newPos = {
           x: pointer.x - mousePointTo.x * newScale,
           y: pointer.y - mousePointTo.y * newScale
         };
-        this.stage.position(newPos2);
+        this.stage.position(newPos);
       });
     }
   };
@@ -8677,44 +8676,44 @@
   var Grid = class {
     constructor(stage, layer) {
       this.stage = stage;
-      this.layer = layer;
       this.cellSize = 50;
-      this.color = "rgba(255, 255, 255, 0.15)";
+      this.color = "rgba(65, 65, 65, 0.5)";
+      this.canvas = document.createElement("canvas");
+      this.canvas.style.position = "absolute";
+      this.canvas.style.top = "0";
+      this.canvas.style.left = "0";
+      this.canvas.style.pointerEvents = "none";
+      this.ctx = this.canvas.getContext("2d");
+      stage.container().insertBefore(this.canvas, stage.container().firstChild);
       this.draw();
       this.stage.on("xChange yChange scaleXChange scaleYChange", () => {
         this.draw();
       });
     }
     draw() {
-      this.layer.destroyChildren();
       const scale = this.stage.scaleX();
       const stagePos = this.stage.position();
       const width = this.stage.width();
       const height = this.stage.height();
+      this.canvas.width = width;
+      this.canvas.height = height;
+      const ctx = this.ctx;
       const cell = this.cellSize * scale;
-      const offsetX = (-stagePos.x % cell + cell) % cell;
-      const offsetY = (-stagePos.y % cell + cell) % cell;
-      for (let x = offsetX; x < width + cell; x += cell) {
-        this.layer.add(
-          new Konva.Line({
-            points: [x, 0, x, height],
-            stroke: this.color,
-            strokeWidth: 1,
-            listening: false
-          })
-        );
+      const offsetX = (stagePos.x % cell + cell) % cell;
+      const offsetY = (stagePos.y % cell + cell) % cell;
+      ctx.clearRect(0, 0, width, height);
+      ctx.strokeStyle = this.color;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      for (let x = offsetX - cell; x < width + cell; x += cell) {
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, height);
       }
-      for (let y = offsetY; y < height + cell; y += cell) {
-        this.layer.add(
-          new Konva.Line({
-            points: [0, y, width, y],
-            stroke: this.color,
-            strokeWidth: 1,
-            listening: false
-          })
-        );
+      for (let y = offsetY - cell; y < height + cell; y += cell) {
+        ctx.moveTo(0, y);
+        ctx.lineTo(width, y);
       }
-      this.layer.batchDraw();
+      ctx.stroke();
     }
   };
 
@@ -8783,7 +8782,9 @@
     }
     execute() {
       this.layer.add(this.token);
-      this.layer.batchDraw();
+      requestAnimationFrame(() => {
+        this.layer.batchDraw();
+      });
     }
     undo() {
       this.token.remove();
@@ -8796,7 +8797,7 @@
     constructor(token, from, to) {
       this.token = token;
       this.from = from;
-      this.to = newPos;
+      this.to = to;
     }
     execute() {
       this.token.position(this.to);
@@ -8821,9 +8822,11 @@
       Konva.Image.fromURL(url, (image) => {
         image.width(500);
         image.height(800);
+        image.listening(true);
+        this.group.listening(true);
         this.group.add(image);
-        layer.batchDraw();
         this.group.on("dragstart", () => {
+          console.log("dragstart disparado");
           this.startPos = { ...this.group.position() };
         });
         this.group.on("dragend", () => {
@@ -8835,6 +8838,7 @@
             new MoveTokenAction(this.group, this.startPos, endPos)
           );
         });
+        if (this.onReady) this.onReady();
       });
     }
   };
@@ -8861,11 +8865,22 @@
               url,
               pos.x,
               pos.y,
-              this.history
+              this.historyManager
             );
-            this.historyManager.execute(
-              new PasteTokenAction(this.tokenLayer, token.group)
-            );
+            token.onReady = () => {
+              console.log(
+                "imagem pronta, layer do grupo:",
+                token.group.getLayer()
+              );
+              this.historyManager.execute(
+                new PasteTokenAction(this.tokenLayer, token.group)
+              );
+              this.tokenLayer.draw();
+              console.log(
+                "ap\xF3s execute, layer do grupo:",
+                token.group.getLayer()
+              );
+            };
           }
         }
       });
@@ -8886,6 +8901,9 @@
     }
     enable() {
       this.stage.on("mousedown.select", (e) => {
+        console.log("target:", e.target);
+        console.log("hasName token:", e.target.hasName("token"));
+        console.log("ancestor:", e.target.findAncestor(".token"));
         if (this.stage.isDragging()) return;
         if (e.target.hasName("token") || e.target.findAncestor(".token")) return;
         const pointer = this.stage.getPointerPosition();
@@ -9007,9 +9025,12 @@
       }
     }
     enable() {
+      window.addEventListener("keydown", this._onKeyDown);
+      window.addEventListener("keyup", this._onKeyUp);
+    }
+    disable() {
       window.removeEventListener("keydown", this._onKeyDown);
       window.removeEventListener("keyup", this._onKeyUp);
-      this.stage.draggable(false);
     }
   };
 
@@ -9019,7 +9040,7 @@
     if (!stageContainer) return;
     const engine = new CanvasEngine(stageContainer);
     const camera = new Camera(engine.stage);
-    const grid = new Grid(engine.stage, engine.layers.grid);
+    const grid = new Grid(engine.stage);
     const historyManager = new HistoryManager();
     const tokenManager = new TokenManager(engine.stage, engine.layers.tokens);
     const pasteManager = new PasteManager(
@@ -9047,9 +9068,6 @@
         historyManager.undo();
         engine.stage.stopDrag();
       }
-    });
-    window.addEventListener("mouseup", () => {
-      engine.stage.find(".token").forEach((node) => node.stopDrag());
     });
     window.addEventListener("resize", () => {
       engine.stage.width(window.innerWidth);

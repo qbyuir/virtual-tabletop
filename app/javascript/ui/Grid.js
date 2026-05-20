@@ -1,9 +1,17 @@
 export default class Grid {
   constructor(stage, layer) {
     this.stage = stage;
-    this.layer = layer;
     this.cellSize = 50;
-    this.color = "rgba(255, 255, 255, 0.15)";
+    this.color = "rgba(65, 65, 65, 0.5)";
+
+    this.canvas = document.createElement("canvas");
+    this.canvas.style.position = "absolute";
+    this.canvas.style.top = "0";
+    this.canvas.style.left = "0";
+    this.canvas.style.pointerEvents = "none";
+    this.ctx = this.canvas.getContext("2d");
+
+    stage.container().insertBefore(this.canvas, stage.container().firstChild);
 
     this.draw();
 
@@ -13,39 +21,33 @@ export default class Grid {
   }
 
   draw() {
-    this.layer.destroyChildren();
-
     const scale = this.stage.scaleX();
     const stagePos = this.stage.position();
     const width = this.stage.width();
     const height = this.stage.height();
+
+    this.canvas.width = width;
+    this.canvas.height = height;
+
+    const ctx = this.ctx;
     const cell = this.cellSize * scale;
 
-    const offsetX = ((-stagePos.x % cell) + cell) % cell;
-    const offsetY = ((-stagePos.y % cell) + cell) % cell;
+    const offsetX = ((stagePos.x % cell) + cell) % cell;
+    const offsetY = ((stagePos.y % cell) + cell) % cell;
 
-    for (let x = offsetX; x < width + cell; x += cell) {
-      this.layer.add(
-        new Konva.Line({
-          points: [x, 0, x, height],
-          stroke: this.color,
-          strokeWidth: 1,
-          listening: false,
-        }),
-      );
+    ctx.clearRect(0, 0, width, height);
+    ctx.strokeStyle = this.color;
+    ctx.lineWidth = 1;
+
+    ctx.beginPath();
+    for (let x = offsetX - cell; x < width + cell; x += cell) {
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, height);
     }
-
-    for (let y = offsetY; y < height + cell; y += cell) {
-      this.layer.add(
-        new Konva.Line({
-          points: [0, y, width, y],
-          stroke: this.color,
-          strokeWidth: 1,
-          listening: false,
-        }),
-      );
+    for (let y = offsetY - cell; y < height + cell; y += cell) {
+      ctx.moveTo(0, y);
+      ctx.lineTo(width, y);
     }
-
-    this.layer.batchDraw();
+    ctx.stroke();
   }
 }
