@@ -3,5 +3,11 @@ class User < ApplicationRecord
   # :confirmable, :lockable, :timeoutable, :trackable and :omniauthable
   devise :database_authenticatable, :registerable,
          :recoverable, :rememberable, :validatable
-  has_many :rooms, dependent: :destroy
+  
+  # salas criadas pelo usuário
+  has_many :owned_rooms, dependent: :destroy
+
+  # salas que o usuário participa
+  has_many :user_roles
+  has_many :rooms, through: :user_roles 
 end

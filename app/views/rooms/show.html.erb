@@ -1,3 +1,13 @@
-<h1>Rooms#show</h1>
-<h2>ta funcionando o show?</h2>
-<p>Find me in app/views/rooms/show.html.erb</p>
+<div class="main-menu">
+    <p> <%= @room.name %> </p>
+    <p> Players: <%= @room.users.count %> </p>
+</div>
+
+<div class="canvas">
+    <%# implementar código Konva %>
+    <%# implementar grid, zoom, pan %>
+</div>
+
+<div class="tool-bar">
+    <%# implementar ferramentas (selecttool, paste, delete, undo/redo %>
+</div>

@@ -1,5 +1,7 @@
 class Room < ApplicationRecord
-  belongs_to :user
+  belongs_to :owner, class_name: 'User', foreign_key: 'user_id'
+  has_many :user_roles
+  has_many :users, through: :user_roles
   has_many :room_extensions
   has_many :extensions, through: :room_extensions
   has_secure_token :code, length: 24
