@@ -1,7 +1,7 @@
 class RoomsController < ApplicationController
   before_action :authenticate_user!
   def index
-    @rooms = current_user.rooms
+    @room = current_user.rooms
   end
 
   def show
@@ -16,10 +16,12 @@ class RoomsController < ApplicationController
   end
 
   def create
-    @room = current_user.rooms.build(rooms_params)
+    @room = Room.new(rooms_params)
+    @room.owner = current_user
     if @room.save
       redirect_to @room
     else
+      puts @room.errors.full_messages
       render :new, status: :unprocessable_entity
     end
   end

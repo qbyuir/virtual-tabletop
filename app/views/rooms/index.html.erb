@@ -1,7 +1,7 @@
 <h1>Suas Salas</h1>
 
 <%# Mostra todas as salas criadas pelo usuário %>
-<% @rooms.each do |room| %>
+<% @room.each do |room| %>
     <%# Mostra o nome da sala e um botão para entrar na respectiva sala %>
   <p> <%= room.name %> <%= link_to "Entrar na Sala", room_path(room)%> </p>
 <% end %>
