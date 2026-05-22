@@ -8782,9 +8782,10 @@
     }
     execute() {
       this.layer.add(this.token);
-      requestAnimationFrame(() => {
-        this.layer.batchDraw();
-      });
+      this.layer.draw();
+      this.token.clearCache();
+      this.token.cache();
+      this.layer.draw();
     }
     undo() {
       this.token.remove();
@@ -8816,15 +8817,23 @@
       this.group = new Konva.Group({
         x,
         y,
-        draggable: true,
+        draggable: false,
         name: "token"
       });
       Konva.Image.fromURL(url, (image) => {
         image.width(500);
         image.height(800);
         image.listening(true);
+        image.hitFunc((context) => {
+          context.beginPath();
+          context.rect(0, 0, image.width(), image.height());
+          context.closePath();
+          context.fillStrokeShape(image);
+        });
         this.group.listening(true);
         this.group.add(image);
+        this.group.cache();
+        this.group.clearCache();
         this.group.on("dragstart", () => {
           console.log("dragstart disparado");
           this.startPos = { ...this.group.position() };
@@ -8900,100 +8909,50 @@
       this.clickStart = null;
     }
     enable() {
+      let draggingToken = null;
+      let dragOffset = { x: 0, y: 0 };
       this.stage.on("mousedown.select", (e) => {
-        console.log("target:", e.target);
-        console.log("hasName token:", e.target.hasName("token"));
-        console.log("ancestor:", e.target.findAncestor(".token"));
-        if (this.stage.isDragging()) return;
-        if (e.target.hasName("token") || e.target.findAncestor(".token")) return;
-        const pointer = this.stage.getPointerPosition();
-        this.clickStart = pointer;
-        this.start = {
-          x: (pointer.x - this.stage.x()) / this.stage.scaleX(),
-          y: (pointer.y - this.stage.y()) / this.stage.scaleY()
-        };
-        this.rect = new Konva.Rect({
-          x: this.start.x,
-          y: this.start.y,
-          width: 0,
-          height: 0,
-          stroke: "blue",
-          fill: "blue",
-          opacity: 0.15,
-          dash: [4, 4],
-          listening: false
-        });
-        this.dragSelecting = true;
-        this.uiLayer.add(this.rect);
-        this.uiLayer.draw();
-      });
-      this.stage.on("mousemove.select", () => {
-        if (this.stage.isDragging()) return;
-        if (!this.rect) return;
-        const pointer = this.stage.getPointerPosition();
-        const pos = {
-          x: (pointer.x - this.stage.x()) / this.stage.scaleX(),
-          y: (pointer.y - this.stage.y()) / this.stage.scaleY()
-        };
-        this.rect.position({
-          x: Math.min(pos.x, this.start.x),
-          y: Math.min(pos.y, this.start.y)
-        });
-        this.rect.size({
-          width: Math.abs(pos.x - this.start.x),
-          height: Math.abs(pos.y - this.start.y)
-        });
-        this.uiLayer.batchDraw();
-      });
-      this.stage.on("mouseup.select", () => {
-        if (!this.rect) return;
-        const box = this.rect.getClientRect({ relativeTo: this.stage });
-        const tokens = this.tokenLayer.find(".token");
-        const selected = tokens.filter(
-          (token) => Konva.Util.haveIntersection(
-            box,
-            token.getClientRect({ relativeTo: this.stage })
-          )
-        );
-        this.dragSelecting = false;
-        this.tokenManager.select(selected);
-        this.rect.destroy();
-        this.rect = null;
-        this.uiLayer.batchDraw();
-      });
-      window.addEventListener("mouseup", () => {
-        if (!this.rect) return;
-        this.rect.destroy();
-        this.rect = null;
-        this.uiLayer.batchDraw();
-      });
-      this.stage.on("click.select", (e) => {
-        if (!this.clickStart) return;
         const pos = this.stage.getPointerPosition();
-        const dist = Math.hypot(
-          pos.x - this.clickStart.x,
-          pos.y - this.clickStart.y
-        );
-        if (dist > 5) return;
-        if (this.dragSelecting) return;
-        let token = e.target;
-        if (!token.hasName("token")) {
-          token = token.findAncestor(".token");
-        }
-        if (!token) {
-          if (!e.evt.shiftKey && !e.evt.ctrlKey) this.tokenManager.deselect();
+        const scale = this.stage.scaleX();
+        const stagePos = this.stage.position();
+        const worldPos = {
+          x: (pos.x - stagePos.x) / scale,
+          y: (pos.y - stagePos.y) / scale
+        };
+        const tokens = this.tokenLayer.find(".token");
+        const clicked = tokens.find((token) => {
+          const box = token.getClientRect({ relativeTo: this.tokenLayer });
+          return worldPos.x >= box.x && worldPos.x <= box.x + box.width && worldPos.y >= box.y && worldPos.y <= box.y + box.height;
+        });
+        if (!clicked) {
+          this.tokenManager.deselect();
           return;
         }
-        const current = this.tokenManager.getSelected();
-        if (e.evt.shiftKey || e.evt.ctrlKey) {
-          if (current.includes(token)) {
-            this.tokenManager.select(current.filter((t) => t !== token));
-          } else {
-            this.tokenManager.select([...current, token]);
-          }
-        } else {
-          this.tokenManager.select([token]);
+        this.tokenManager.select([clicked]);
+        draggingToken = clicked;
+        dragOffset = {
+          x: worldPos.x - clicked.x(),
+          y: worldPos.y - clicked.y()
+        };
+      });
+      this.stage.on("mousemove.select", (e) => {
+        if (draggingToken !== null) {
+          const pos = this.stage.getPointerPosition();
+          const scale = this.stage.scaleX();
+          const stagePos = this.stage.position();
+          const worldPos = {
+            x: (pos.x - stagePos.x) / scale,
+            y: (pos.y - stagePos.y) / scale
+          };
+          draggingToken.position({
+            x: worldPos.x - dragOffset.x,
+            y: worldPos.y - dragOffset.y
+          });
+          this.tokenLayer.batchDraw();
         }
+      });
+      this.stage.on("mouseup.select", (e) => {
+        draggingToken = null;
       });
     }
     disable() {

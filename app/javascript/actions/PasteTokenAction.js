@@ -6,10 +6,10 @@ export default class PasteTokenAction {
 
   execute() {
     this.layer.add(this.token);
-    // aguarda o próximo frame para garantir que a imagem já carregou
-    requestAnimationFrame(() => {
-      this.layer.batchDraw();
-    });
+    this.layer.draw();
+    this.token.clearCache();
+    this.token.cache();
+    this.layer.draw();
   }
 
   undo() {

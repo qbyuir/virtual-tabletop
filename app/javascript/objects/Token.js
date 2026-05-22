@@ -7,7 +7,7 @@ export default class Token {
     this.group = new Konva.Group({
       x: x,
       y: y,
-      draggable: true,
+      draggable: false,
       name: "token",
     });
 
@@ -15,8 +15,18 @@ export default class Token {
       image.width(500);
       image.height(800);
       image.listening(true);
+
+      image.hitFunc((context) => {
+        context.beginPath();
+        context.rect(0, 0, image.width(), image.height());
+        context.closePath();
+        context.fillStrokeShape(image);
+      });
       this.group.listening(true);
       this.group.add(image);
+
+      this.group.cache();
+      this.group.clearCache();
 
       this.group.on("dragstart", () => {
         console.log("dragstart disparado");
