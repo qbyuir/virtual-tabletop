@@ -8910,7 +8910,7 @@
     }
     enable() {
       let draggingToken = null;
-      let dragOffset = { x: 0, y: 0 };
+      let dragOffsets = /* @__PURE__ */ new Map();
       this.stage.on("mousedown.select", (e) => {
         const pos = this.stage.getPointerPosition();
         const scale = this.stage.scaleX();
@@ -8928,12 +8928,19 @@
           this.tokenManager.deselect();
           return;
         }
-        this.tokenManager.select([clicked]);
+        if (e.evt.shiftKey == true) {
+          const current = this.tokenManager.getSelected();
+          this.tokenManager.select([...current, clicked]);
+        } else {
+          this.tokenManager.select([clicked]);
+        }
         draggingToken = clicked;
-        dragOffset = {
-          x: worldPos.x - clicked.x(),
-          y: worldPos.y - clicked.y()
-        };
+        this.tokenManager.getSelected().forEach((token) => {
+          dragOffsets.set(token, {
+            x: worldPos.x - token.x(),
+            y: worldPos.y - token.y()
+          });
+        });
       });
       this.stage.on("mousemove.select", (e) => {
         if (draggingToken !== null) {
@@ -8944,9 +8951,12 @@
             x: (pos.x - stagePos.x) / scale,
             y: (pos.y - stagePos.y) / scale
           };
-          draggingToken.position({
-            x: worldPos.x - dragOffset.x,
-            y: worldPos.y - dragOffset.y
+          this.tokenManager.getSelected().forEach((token) => {
+            const offset = dragOffsets.get(token);
+            token.position({
+              x: worldPos.x - offset.x,
+              y: worldPos.y - offset.y
+            });
           });
           this.tokenLayer.batchDraw();
         }
